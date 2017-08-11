@@ -1,10 +1,11 @@
 using ArgParse
 function inferDelim(sampleLines)
-
+	chars = unique(sampleLines[1]) #We don't care about all possible chars in the sample. The delimiter should be in the first line (and any line)
+	
 	return delim
 end
 function main(args)
-	#initialize settings for argparse library
+		#initialize settings for argparse library
 	s = ArgParseSettings(description = "Script to create live objects from rows in csv")
 	@add_arg_table opts begin
 		"--delimiter", "-d" 
@@ -29,7 +30,8 @@ function main(args)
 					sampleLines = src[1:5:end]
 				else
 					sampleLines = src[:]
-				end	
+				end
+				delim = inferDelim(sampleLines)	
 			end	
 		end
 	end
