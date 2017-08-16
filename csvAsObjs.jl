@@ -1,7 +1,8 @@
 using ArgParse
 function inferDelim(sampleLines)
 	typicalDelim = [',','\t','|',' ']
-	delim = typicalDelim[end] 
+	delim = typicalDelim[end]
+	modFlag = 0
 	chars = unique(sampleLines[1]) #We don't care about all possible chars in the sample. The delimiter should be in the first line (and any line)
 	tempCounts = zeros(Int8, length(chars), 1)
 	countDict = Dict(zip(chars,tempCounts))
@@ -13,19 +14,56 @@ function inferDelim(sampleLines)
  		if countDict[char] % length(sampleLines) == 0
 			push!(potentialDelims, char)
 		end
-	end	
+	end
 	if length(potentialDelims) > 1
 		for candidate in potentialDelims
-			if candidate in typicalDelim
-				if findin(typicalDelim, candidate)[1] < findin(typicalDelim, candidate)[1]
-					delim = candidate
-				else
-					continue
-				end
+			if candidate in typicalDelim && findfirst(typicalDelim, candidate) <= findfirst(typicalDelim, delim)
+				delim = candidate
+				modFlag = 1
 			end
 		end
 	end
-	return potentialDelims 
+	if modFlag == 0
+		print("Unable to successfully identify the correct delimiter.")
+		showDelim(sampleLines, potentialDelims)
+		print("Which delimiter looks most appropriate?")
+		delim = readline(STDIN)
+	end
+	return delim 
+end
+function showDelim(sampleLines, potentialDelims)
+	stringCandidates = arrayAsEngString(potentialDelims)
+	print("The potential delimiter candidates are $stringCandidates")
+	for delim in potentialDelims
+		print("The split for $delim in this file is")
+		splitHeader = truncSepSamples(sampleLines[1], delim)
+		splitLine1 = truncSepSamples(sampleLines[2], delim)
+		splitLine2 = truncSepSamples(sampleLines[3], delim) 
+	end
+end
+function truncSepSamples(sampleLine, delim)
+	splitLine = split(sampleLine, ",")
+	truncLine = ""
+	for piece in splitLine
+		pieceLength = length(piece)
+		if pieceLength > 5
+			truncLine *= piece[1:5] * "..." 
+		else
+			truncLine *= piece * (" " ^ (7-pieceLength))
+		end
+	end
+	return truncLine
+end
+function arrayAsEngString(inputArray::Array)
+	str = ""
+	for i in eachindex(inputArray)
+		if i != size(inputArray)[1]
+			str *= " $(inputArray[i]),"
+		else
+			str *= " and $(inputArray[i])"
+		end
+	end
+	return str
 end
 function countChars!(line::String, charCountDict::Dict)
 	for char in line
@@ -63,7 +101,8 @@ function main(args)
 				else
 					sampleLines = src[:]
 				end
-				delim = inferDelim(sampleLines)	
+				delim = inferDelim(sampleLines)
+				print(delim)	
 			end	
 		end
 	end
